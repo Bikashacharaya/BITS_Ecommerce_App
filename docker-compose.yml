@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+  # ------------------
+  # MongoDB Container
+  # ------------------
+  mongo:
+    image: mongo:6
+    container_name: mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  # ------------------
+  # Payment Service
+  # ------------------
+  payment_service:
+    build: ./payment_service
+    container_name: payment_service
+    restart: unless-stopped
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/payment
+    ports:
+      - "18081:18081"
+    depends_on:
+      - mongo
+
+  # ------------------
+  # Order Service
+  # ------------------
+  order_service:
+    build: ./order_service
+    container_name: order_service
+    restart: unless-stopped
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/order
+      - PAYMENT_SERVICE_URL=http://payment_service:18081
+    ports:
+      - "18080:18080"
+    depends_on:
+      - mongo
+      - payment_service
+
+volumes:
+  mongo-data:
