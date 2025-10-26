@@ -14,6 +14,23 @@ services:
       - mongo-data:/data/db
 
   # ------------------
+  # MySQL Container
+  # ------------------
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: main_db
+      MYSQL_USER: appuser
+      MYSQL_PASSWORD: apppassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  # ------------------
   # Payment Service
   # ------------------
   payment_service:
@@ -43,5 +60,47 @@ services:
       - mongo
       - payment_service
 
+  # ------------------
+  # Catalog Service
+  # ------------------
+  catalog_service:
+    build: ./catalog_service
+    container_name: catalog_service
+    restart: unless-stopped
+    environment:
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_DATABASE=main_db
+      - MYSQL_USER=appuser
+      - MYSQL_PASSWORD=apppassword
+    ports:
+      - "18082:18082"
+    depends_on:
+      - mysql
+
+  # ------------------
+  # Inventory Service
+  # ------------------
+  inventory_service:
+    build: ./inventory_service
+    container_name: inventory_service
+    restart: unless-stopped
+    environment:
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_DATABASE=main_db
+      - MYSQL_USER=appuser
+      - MYSQL_PASSWORD=apppassword
+      - CATALOG_SERVICE_URL=http://catalog_service:18082
+    ports:
+      - "18083:18083"
+    depends_on:
+      - mysql
+      - catalog_service
+
+# ------------------
+# Named Volumes
+# ------------------
 volumes:
   mongo-data:
+  mysql-data:

@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payment-service
+  template:
+    metadata:
+      labels:
+        app: payment-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "18081"
+    spec:
+      containers:
+        - name: payment-service
+          image: payment_service:latest
+          ports:
+            - containerPort: 18081
+          env:
+            - name: MONGO_URI
+              value: mongodb://mongo:27017/payment
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 18081
+            initialDelaySeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 18081
+            initialDelaySeconds: 30

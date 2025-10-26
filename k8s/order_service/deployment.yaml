@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order-service
+  template:
+    metadata:
+      labels:
+        app: order-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "18080"
+    spec:
+      containers:
+        - name: order-service
+          image: order_service:latest
+          ports:
+            - containerPort: 18080
+          env:
+            - name: MONGO_URI
+              value: mongodb://mongo:27017/order
+            - name: PAYMENT_SERVICE_URL
+              value: http://payment-service:18081
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 18080
+            initialDelaySeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 18080
+            initialDelaySeconds: 30
